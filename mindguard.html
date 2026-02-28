@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindGuard – AI Mental Health Screening</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #111827;
+    --bg3: #1a2236;
+    --card: #151d2e;
+    --border: rgba(99,135,255,0.15);
+    --accent: #6387ff;
+    --accent2: #a78bfa;
+    --teal: #2dd4bf;
+    --rose: #fb7185;
+    --amber: #fbbf24;
+    --text: #e8eaf0;
+    --muted: #7a8499;
+    --radius: 16px;
+    --font-head: 'Playfair Display', Georgia, serif;
+    --font-body: 'DM Sans', sans-serif;
+    --low: #2dd4bf;
+    --medium: #fbbf24;
+    --high: #fb7185;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -20%;
+    left: -10%;
+    width: 60%;
+    height: 60%;
+    background: radial-gradient(ellipse, rgba(99,135,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -20%;
+    right: -10%;
+    width: 50%;
+    height: 50%;
+    background: radial-gradient(ellipse, rgba(167,139,250,0.07) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Pages */
+  .page { display: none; min-height: 100vh; position: relative; z-index: 1; }
+  .page.active { display: flex; flex-direction: column; }
+
+  /* ── NAV ── */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,14,26,0.8);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-logo { font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--accent); cursor:pointer; }
+  .nav-logo span { color: var(--accent2); }
+  nav .nav-actions { display: flex; gap: 12px; align-items: center; }
+  .lang-btn {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    padding: 7px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+    font-family: var(--font-body); transition: all 0.2s;
+  }
+  .lang-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-nav {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; border: none; padding: 8px 18px; border-radius: 8px;
+    font-size: 13px; cursor: pointer; font-family: var(--font-body); font-weight: 500;
+    transition: opacity 0.2s;
+  }
+  .btn-nav:hover { opacity: 0.85; }
+
+  /* ── LANGUAGE SELECTION ── */
+  #page-lang {
+    align-items: center; justify-content: center;
+    background: var(--bg);
+    animation: fadeIn 0.5s ease;
+  }
+  .lang-container {
+    text-align: center; max-width: 700px; padding: 40px 24px;
+  }
+  .lang-icon {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; margin: 0 auto 28px;
+    box-shadow: 0 0 60px rgba(99,135,255,0.3);
+  }
+  .lang-container h1 { font-family: var(--font-head); font-size: clamp(28px,5vw,48px); font-weight: 700; margin-bottom: 12px; }
+  .lang-container p { color: var(--muted); margin-bottom: 40px; font-size: 16px; }
+  .lang-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;
+    margin-bottom: 32px;
+  }
+  .lang-card {
+    background: var(--card); border: 2px solid var(--border);
+    border-radius: var(--radius); padding: 18px 12px;
+    cursor: pointer; transition: all 0.25s; text-align: center;
+  }
+  .lang-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(99,135,255,0.15); }
+  .lang-card.selected { border-color: var(--accent); background: rgba(99,135,255,0.12); }
+  .lang-card .flag { font-size: 28px; margin-bottom: 8px; display: block; }
+  .lang-card .lang-name { font-size: 14px; font-weight: 500; }
+  .lang-card .lang-native { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; border: none; padding: 14px 36px; border-radius: 12px;
+    font-size: 16px; font-weight: 600; cursor: pointer; font-family: var(--font-body);
+    transition: all 0.25s; box-shadow: 0 4px 20px rgba(99,135,255,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(99,135,255,0.4); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ── HOME ── */
+  #page-home { background: var(--bg); }
+  .hero {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 80px 40px; text-align: center; flex-direction: column;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(99,135,255,0.1); border: 1px solid rgba(99,135,255,0.3);
+    border-radius: 100px; padding: 6px 16px; font-size: 13px; color: var(--accent);
+    margin-bottom: 28px; font-weight: 500;
+  }
+  .hero h1 {
+    font-family: var(--font-head); font-size: clamp(36px,6vw,72px);
+    font-weight: 700; line-height: 1.1; margin-bottom: 20px;
+    max-width: 900px;
+  }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero p { font-size: 18px; color: var(--muted); max-width: 560px; line-height: 1.7; margin-bottom: 40px; }
+  .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .btn-outline {
+    background: transparent; color: var(--text); border: 1px solid var(--border);
+    padding: 13px 28px; border-radius: 12px; font-size: 15px; cursor: pointer;
+    font-family: var(--font-body); transition: all 0.2s;
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .features {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 20px;
+    padding: 0 40px 80px; max-width: 1100px; margin: 0 auto; width: 100%;
+  }
+  .feature-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 28px 24px; transition: border-color 0.2s;
+  }
+  .feature-card:hover { border-color: rgba(99,135,255,0.4); }
+  .feature-icon { font-size: 32px; margin-bottom: 16px; }
+  .feature-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .feature-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  /* ── QUESTIONNAIRE ── */
+  #page-quiz { background: var(--bg); }
+  .quiz-wrap { flex: 1; display: flex; flex-direction: column; max-width: 680px; margin: 0 auto; width: 100%; padding: 40px 24px; }
+  .progress-header { margin-bottom: 32px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .progress-bar { height: 4px; background: var(--bg3); border-radius: 100px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width 0.4s ease; }
+  .question-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 36px; animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .q-number { font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+  .q-text { font-family: var(--font-head); font-size: clamp(18px,3vw,24px); font-weight: 600; line-height: 1.4; margin-bottom: 28px; }
+  .q-hint { font-size: 13px; color: var(--muted); margin-top: -20px; margin-bottom: 24px; }
+
+  /* Number input */
+  .num-input {
+    width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+    padding: 14px 18px; border-radius: 10px; font-size: 16px; font-family: var(--font-body);
+    transition: border-color 0.2s; outline: none;
+  }
+  .num-input:focus { border-color: var(--accent); }
+
+  /* Scale options */
+  .scale-options { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .scale-option {
+    background: var(--bg2); border: 2px solid var(--border); border-radius: 10px;
+    padding: 14px 8px; text-align: center; cursor: pointer; transition: all 0.2s;
+    font-size: 15px; font-weight: 600; color: var(--muted);
+  }
+  .scale-option:hover { border-color: var(--accent); color: var(--text); }
+  .scale-option.selected { border-color: var(--accent); background: rgba(99,135,255,0.12); color: var(--text); }
+  .scale-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 8px; padding: 0 2px; }
+
+  /* Choice options */
+  .choice-options { display: flex; flex-direction: column; gap: 10px; }
+  .choice-option {
+    background: var(--bg2); border: 2px solid var(--border); border-radius: 10px;
+    padding: 14px 20px; cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 12px; font-size: 15px;
+  }
+  .choice-option:hover { border-color: var(--accent); }
+  .choice-option.selected { border-color: var(--accent); background: rgba(99,135,255,0.1); }
+  .choice-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; transition: all 0.2s; }
+  .choice-option.selected .choice-dot { background: var(--accent); border-color: var(--accent); }
+
+  .quiz-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; }
+  .btn-back {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    padding: 11px 24px; border-radius: 10px; cursor: pointer; font-family: var(--font-body);
+    font-size: 14px; transition: all 0.2s;
+  }
+  .btn-back:hover { border-color: var(--text); color: var(--text); }
+
+  /* ── RESULT ── */
+  #page-result { background: var(--bg); }
+  .result-wrap { flex: 1; max-width: 720px; margin: 0 auto; width: 100%; padding: 48px 24px; }
+  .result-hero { text-align: center; margin-bottom: 40px; }
+  .risk-badge {
+    display: inline-flex; align-items: center; gap: 10px;
+    border-radius: 100px; padding: 12px 28px; font-size: 22px; font-weight: 700;
+    margin-bottom: 16px; font-family: var(--font-head);
+  }
+  .risk-badge.low { background: rgba(45,212,191,0.15); color: var(--low); border: 2px solid rgba(45,212,191,0.3); }
+  .risk-badge.medium { background: rgba(251,191,36,0.15); color: var(--medium); border: 2px solid rgba(251,191,36,0.3); }
+  .risk-badge.high { background: rgba(251,113,133,0.15); color: var(--high); border: 2px solid rgba(251,113,133,0.3); }
+  .result-hero h2 { font-family: var(--font-head); font-size: clamp(20px,4vw,32px); margin-bottom: 10px; }
+  .result-hero p { color: var(--muted); font-size: 15px; max-width: 480px; margin: 0 auto; line-height: 1.6; }
+
+  .score-ring-wrap { display: flex; justify-content: center; margin: 32px 0; }
+  .score-ring { position: relative; width: 140px; height: 140px; }
+  .score-ring svg { width: 140px; height: 140px; transform: rotate(-90deg); }
+  .score-ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .score-num { font-size: 34px; font-weight: 700; font-family: var(--font-head); }
+  .score-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .result-section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; }
+  .result-section h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .factor-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .factor-item { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; color: var(--muted); line-height: 1.5; }
+  .factor-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .factor-dot.red { background: var(--rose); }
+  .factor-dot.amber { background: var(--amber); }
+  .factor-dot.teal { background: var(--teal); }
+  .rec-list { display: flex; flex-direction: column; gap: 12px; }
+  .rec-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: var(--bg3); border-radius: 10px; padding: 14px 16px; font-size: 14px; line-height: 1.5;
+  }
+  .rec-icon { font-size: 20px; flex-shrink: 0; }
+
+  .model-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .model-card {
+    background: var(--bg3); border-radius: 10px; padding: 16px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .model-card .model-name { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .model-card .model-val { font-size: 22px; font-weight: 700; font-family: var(--font-head); }
+  .model-bar { height: 4px; background: var(--bg2); border-radius: 100px; margin-top: 8px; overflow: hidden; }
+  .model-bar-fill { height: 100%; border-radius: 100px; }
+
+  .disclaimer {
+    background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2);
+    border-radius: 10px; padding: 16px 20px; font-size: 13px; color: var(--muted);
+    line-height: 1.6; margin-top: 8px;
+  }
+  .result-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 32px; }
+
+  /* ── DASHBOARD ── */
+  #page-dashboard { background: var(--bg); }
+  .dash-wrap { flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; padding: 40px 24px; }
+  .dash-header { margin-bottom: 36px; }
+  .dash-header h1 { font-family: var(--font-head); font-size: clamp(24px,4vw,40px); font-weight: 700; margin-bottom: 8px; }
+  .dash-header p { color: var(--muted); font-size: 15px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .stat-card .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .stat-card .stat-num { font-family: var(--font-head); font-size: 36px; font-weight: 700; }
+  .stat-card .stat-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  @media(max-width:700px){ .charts-grid { grid-template-columns:1fr; } .model-scores { grid-template-columns:1fr; } }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .chart-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 20px; }
+  canvas { width: 100% !important; }
+
+  .risk-dist { display: flex; flex-direction: column; gap: 14px; }
+  .risk-dist-item { display: flex; align-items: center; gap: 14px; }
+  .risk-dist-label { font-size: 14px; width: 90px; flex-shrink: 0; }
+  .risk-dist-bar-wrap { flex: 1; height: 28px; background: var(--bg3); border-radius: 6px; overflow: hidden; }
+  .risk-dist-bar { height: 100%; border-radius: 6px; display: flex; align-items: center; padding: 0 12px; font-size: 13px; font-weight: 600; color: white; transition: width 1s ease; }
+  .risk-dist-pct { font-size: 14px; font-weight: 600; width: 44px; text-align: right; flex-shrink: 0; }
+
+  /* Modals */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px); z-index: 200; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+    padding: 36px; max-width: 500px; width: 100%; animation: modalIn 0.3s ease;
+  }
+  @keyframes modalIn { from { opacity:0; transform:scale(0.95) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+  .modal h2 { font-family: var(--font-head); font-size: 22px; margin-bottom: 8px; }
+  .modal p { color: var(--muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
+  .modal .lang-grid { max-height: 320px; overflow-y: auto; }
+  .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; line-height: 1; }
+
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+  /* Loading */
+  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(10,14,26,0.9); z-index: 150; align-items: center; justify-content: center; flex-direction: column; gap: 20px; }
+  .loading-overlay.active { display: flex; }
+  .spinner { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--muted); font-size: 15px; }
+
+  /* Footer */
+  footer { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+
+  @media(max-width:600px){
+    nav { padding: 16px 20px; }
+    .hero { padding: 60px 20px; }
+    .features { padding: 0 20px 60px; }
+    .scale-options { grid-template-columns: repeat(5,1fr); }
+    .quiz-wrap { padding: 24px 16px; }
+    .question-card { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Analyzing your responses…</div>
+</div>
+
+<!-- LANGUAGE MODAL -->
+<div class="modal-overlay" id="lang-modal">
+  <div class="modal" style="position:relative; max-width:620px;">
+    <button class="modal-close" onclick="closeLangModal()">✕</button>
+    <h2 id="ml-title">Choose Language</h2>
+    <p id="ml-sub">Select your preferred language for the app.</p>
+    <div class="lang-grid" id="modal-lang-grid"></div>
+  </div>
+</div>
+
+<!-- PAGE: LANGUAGE SELECTION -->
+<div class="page active" id="page-lang">
+  <div class="lang-container">
+    <div class="lang-icon">🧠</div>
+    <h1>MindGuard</h1>
+    <p>AI-powered early mental health screening for students. Private, anonymous, and free.</p>
+    <div class="lang-grid" id="lang-grid"></div>
+    <button class="btn-primary" id="lang-continue" onclick="confirmLanguage()" disabled>Continue →</button>
+  </div>
+</div>
+
+<!-- PAGE: HOME -->
+<div class="page" id="page-home">
+  <nav>
+    <div class="nav-logo" onclick="goPage('home')">Mind<span>Guard</span></div>
+    <div class="nav-actions">
+      <button class="lang-btn" onclick="openLangModal()">🌐 <span id="nav-lang-label">EN</span></button>
+      <button class="btn-nav" onclick="goPage('quiz')" id="nav-start-btn">Start Screening</button>
+    </div>
+  </nav>
+  <div class="hero">
+    <div class="hero-badge">🔒 <span id="h-badge">Anonymous & Private</span></div>
+    <h1 id="h-title">Early <em>Mental Health</em> Screening for Students</h1>
+    <p id="h-sub">Answer 10 simple questions. Our AI predicts your mental health risk in under 2 minutes. Free, anonymous, and clinically informed.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="goPage('quiz')" id="h-start-btn">Start Screening</button>
+      <button class="btn-outline" onclick="goPage('dashboard')" id="h-dash-btn">School Dashboard</button>
+    </div>
+  </div>
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3 id="f1t">2-Minute Assessment</h3>
+      <p id="f1d">Just 10 targeted questions covering sleep, stress, social habits, and academic pressure.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3 id="f2t">Dual AI Models</h3>
+      <p id="f2d">Logistic Regression and Random Forest ensemble for higher accuracy predictions.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔐</div>
+      <h3 id="f3t">100% Anonymous</h3>
+      <p id="f3d">No name, email, or personal identifiers collected. Your privacy is guaranteed.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3 id="f4t">Actionable Results</h3>
+      <p id="f4d">Personalized recommendations and contributing factors explained clearly.</p>
+    </div>
+  </div>
+  <footer id="home-footer">MindGuard is a screening tool only, not a medical diagnosis. © 2025 MindGuard</footer>
+</div>
+
+<!-- PAGE: QUIZ -->
+<div class="page" id="page-quiz">
+  <nav>
+    <div class="nav-logo" onclick="goPage('home')">Mind<span>Guard</span></div>
+    <div class="nav-actions">
+      <button class="lang-btn" onclick="openLangModal()">🌐 <span class="nav-lang-label2">EN</span></button>
+    </div>
+  </nav>
+  <div class="quiz-wrap">
+    <div class="progress-header">
+      <div class="progress-label">
+        <span id="q-progress-label">Question 1 of 10</span>
+        <span id="q-progress-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:10%"></div></div>
+    </div>
+    <div class="question-card" id="question-card">
+      <!-- injected by JS -->
+    </div>
+    <div class="quiz-nav">
+      <button class="btn-back" id="q-back-btn" onclick="prevQuestion()">← Back</button>
+      <button class="btn-primary" id="q-next-btn" onclick="nextQuestion()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: RESULT -->
+<div class="page" id="page-result">
+  <nav>
+    <div class="nav-logo" onclick="goPage('home')">Mind<span>Guard</span></div>
+    <div class="nav-actions">
+      <button class="lang-btn" onclick="openLangModal()">🌐 <span class="nav-lang-label3">EN</span></button>
+    </div>
+  </nav>
+  <div class="result-wrap">
+    <div class="result-hero">
+      <div class="risk-badge" id="result-badge">⚪ —</div>
+      <h2 id="result-title">Your Mental Health Risk Assessment</h2>
+      <p id="result-sub">Based on your responses, our AI models have generated the following assessment.</p>
+    </div>
+
+    <div class="score-ring-wrap">
+      <div class="score-ring">
+        <svg viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(99,135,255,0.1)" stroke-width="10"/>
+          <circle cx="70" cy="70" r="60" fill="none" stroke="url(#ringGrad)" stroke-width="10"
+            stroke-linecap="round" stroke-dasharray="377" id="ring-dash" stroke-dashoffset="377"/>
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#6387ff"/>
+              <stop offset="100%" stop-color="#a78bfa"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="score-ring-text">
+          <div class="score-num" id="score-num">—</div>
+          <div class="score-label" id="score-label-ring">Risk Score</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <h3>🔍 <span id="factors-title">Contributing Factors</span></h3>
+      <ul class="factor-list" id="factors-list"></ul>
+    </div>
+
+    <div class="result-section">
+      <h3>💡 <span id="recs-title">Recommendations</span></h3>
+      <div class="rec-list" id="recs-list"></div>
+    </div>
+
+    <div class="result-section">
+      <h3>🤖 <span id="models-title">Model Predictions</span></h3>
+      <div class="model-scores" id="model-scores"></div>
+    </div>
+
+    <div class="disclaimer" id="result-disclaimer">
+      ⚠️ This screening is for informational purposes only and does not constitute a medical diagnosis. If you are experiencing distress, please consult a mental health professional.
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-primary" onclick="goPage('quiz'); resetQuiz();" id="retake-btn">Take Again</button>
+      <button class="btn-outline" onclick="goPage('home')" id="home-btn-result">Back to Home</button>
+    </div>
+  </div>
+  <footer id="result-footer">MindGuard screening tool — not a medical diagnosis</footer>
+</div>
+
+<!-- PAGE: DASHBOARD -->
+<div class="page" id="page-dashboard">
+  <nav>
+    <div class="nav-logo" onclick="goPage('home')">Mind<span>Guard</span></div>
+    <div class="nav-actions">
+      <button class="lang-btn" onclick="openLangModal()">🌐 <span class="nav-lang-label4">EN</span></button>
+      <button class="btn-nav" onclick="goPage('quiz')" id="dash-start-btn">New Screening</button>
+    </div>
+  </nav>
+  <div class="dash-wrap">
+    <div class="dash-header">
+      <h1 id="dash-title">School Dashboard</h1>
+      <p id="dash-sub">Aggregated anonymous mental health statistics — individual data is never displayed.</p>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label" id="ds1l">Total Screenings</div>
+        <div class="stat-num" id="ds1v">1,284</div>
+        <div class="stat-sub" id="ds1s">↑ 14% this month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" id="ds2l">Low Risk</div>
+        <div class="stat-num" style="color:var(--low)" id="ds2v">42%</div>
+        <div class="stat-sub" id="ds2s">539 students</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" id="ds3l">Medium Risk</div>
+        <div class="stat-num" style="color:var(--medium)" id="ds3v">37%</div>
+        <div class="stat-sub" id="ds3s">475 students</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label" id="ds4l">High Risk</div>
+        <div class="stat-num" style="color:var(--high)" id="ds4v">21%</div>
+        <div class="stat-sub" id="ds4s">270 students</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3 id="chart1-title">Weekly Screening Trend</h3>
+        <canvas id="weeklyChart" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3 id="chart2-title">Monthly Overview</h3>
+        <canvas id="monthlyChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:24px;">
+      <h3 id="chart3-title">Risk Distribution</h3>
+      <div class="risk-dist" id="risk-dist"></div>
+    </div>
+
+    <div class="chart-card">
+      <h3 id="chart4-title">Top Risk Factors (Aggregated)</h3>
+      <canvas id="factorChart" height="200"></canvas>
+    </div>
+  </div>
+  <footer id="dash-footer">MindGuard School Dashboard — Individual data is never displayed. All data is anonymized.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════
+// TRANSLATIONS
+// ═══════════════════════════════════════════════════════════
+const LANGS = [
+  { code:'en', flag:'🇺🇸', name:'English', native:'English' },
+  { code:'id', flag:'🇮🇩', name:'Indonesian', native:'Bahasa Indonesia' },
+  { code:'es', flag:'🇪🇸', name:'Spanish', native:'Español' },
+  { code:'zh', flag:'🇨🇳', name:'Chinese', native:'中文' },
+  { code:'ja', flag:'🇯🇵', name:'Japanese', native:'日本語' },
+  { code:'ar', flag:'🇸🇦', name:'Arabic', native:'العربية' },
+  { code:'fr', flag:'🇫🇷', name:'French', native:'Français' },
+  { code:'de', flag:'🇩🇪', name:'German', native:'Deutsch' },
+  { code:'ko', flag:'🇰🇷', name:'Korean', native:'한국어' },
+  { code:'pt', flag:'🇧🇷', name:'Portuguese', native:'Português' },
+];
+
+const T = {
+  en: {
+    navStart:'Start Screening', badge:'Anonymous & Private',
+    hTitle:'Early Mental Health Screening for Students',
+    hSub:'Answer 10 simple questions. Our AI predicts your mental health risk in under 2 minutes. Free, anonymous, and clinically informed.',
+    hStart:'Start Screening', hDash:'School Dashboard',
+    f1t:'2-Minute Assessment', f1d:'Just 10 targeted questions covering sleep, stress, social habits, and academic pressure.',
+    f2t:'Dual AI Models', f2d:'Logistic Regression and Random Forest ensemble for higher accuracy predictions.',
+    f3t:'100% Anonymous', f3d:'No name, email, or personal identifiers collected. Your privacy is guaranteed.',
+    f4t:'Actionable Results', f4d:'Personalized recommendations and contributing factors explained clearly.',
+    qLabel:'Question', of:'of',
+    qNext:'Next →', qBack:'← Back', qSubmit:'Get My Results →',
+    resultTitle:'Your Mental Health Risk Assessment',
+    resultSub:'Based on your responses, our AI models have generated the following assessment.',
+    factorsTitle:'Contributing Factors', recsTitle:'Recommendations', modelsTitle:'Model Predictions',
+    riskLow:'Low Risk', riskMedium:'Medium Risk', riskHigh:'High Risk',
+    scoreLabel:'Risk Score',
+    disclaimer:'⚠️ This screening is for informational purposes only and does not constitute a medical diagnosis. If you are experiencing distress, please consult a mental health professional.',
+    retake:'Take Again', homeBtn:'Back to Home',
+    dashTitle:'School Dashboard', dashSub:'Aggregated anonymous mental health statistics — individual data is never displayed.',
+    ds1l:'Total Screenings', ds1s:'↑ 14% this month',
+    ds2l:'Low Risk', ds3l:'Medium Risk', ds4l:'High Risk',
+    chart1:'Weekly Screening Trend', chart2:'Monthly Overview',
+    chart3:'Risk Distribution', chart4:'Top Risk Factors (Aggregated)',
+    dashStart:'New Screening',
+    loading:'Analyzing your responses…',
+    mlTitle:'Choose Language', mlSub:'Select your preferred language.',
+    homeFooter:'MindGuard is a screening tool only, not a medical diagnosis.',
+    resultFooter:'MindGuard screening tool — not a medical diagnosis',
+    dashFooter:'MindGuard School Dashboard — Individual data is never displayed.',
+    questions:[
+      { text:'How old are you?', hint:'Enter your age in years', type:'number', key:'age', min:10, max:30 },
+      { text:'On average, how many hours do you sleep per day?', hint:'Include naps (e.g. 7)', type:'number', key:'sleep_hours', min:1, max:16 },
+      { text:'How many hours per day do you use social media?', hint:'Total across all platforms', type:'number', key:'social_media_hours', min:0, max:16 },
+      { text:'How would you rate your academic pressure?', hint:'1 = Very Low, 5 = Very High', type:'scale', key:'academic_pressure', min:1, max:5, minLabel:'Very Low', maxLabel:'Very High' },
+      { text:'How many times per week do you engage in physical activity?', hint:'Exercise, sports, walking, etc.', type:'choices', key:'physical_activity', choices:['0 – None','1–2 times','3–4 times','5+ times'], values:[0,1.5,3.5,5] },
+      { text:'How would you rate the quality of your social relationships?', hint:'Friends, family, peers', type:'scale', key:'social_relationship_quality', min:1, max:5, minLabel:'Very Poor', maxLabel:'Excellent' },
+      { text:'How often do you feel stressed or overwhelmed?', hint:'', type:'choices', key:'stress_level', choices:['Rarely or never','Sometimes','Often','Almost always'], values:[1,2,3.5,5] },
+      { text:'How would you rate your study workload?', hint:'1 = Very Light, 5 = Very Heavy', type:'scale', key:'study_workload', min:1, max:5, minLabel:'Very Light', maxLabel:'Very Heavy' },
+      { text:'How stable is your mood throughout the day?', hint:'', type:'choices', key:'mood_stability', choices:['Very stable','Mostly stable','Somewhat unstable','Very unstable'], values:[5,4,2,1] },
+      { text:'How many hours of screen time do you have before sleeping?', hint:'Phone, TV, laptop, etc.', type:'number', key:'screen_time_before_sleep', min:0, max:8 },
+    ],
+    factors:{
+      sleep:'Sleep duration less than 6 hours',
+      social_media:'Social media usage above 5 hours per day',
+      academic:'High academic pressure (4–5)',
+      stress:'High stress frequency',
+      physical:'Low physical activity',
+      social_rel:'Poor quality of social relationships',
+      screen_time:'High screen time before sleep (>2 hours)',
+      study:'Heavy study workload',
+      mood:'Unstable mood patterns',
+    },
+    recs:{
+      sleep:'Aim for 7–9 hours of sleep each night. Create a consistent sleep schedule.',
+      social_media:'Set app limits to reduce social media usage, especially before bedtime.',
+      academic:'Talk to a teacher or academic advisor about managing your workload.',
+      stress:'Try mindfulness, breathing exercises, or journaling to manage stress.',
+      physical:'Incorporate at least 30 minutes of physical activity 3–5 days per week.',
+      social_rel:'Reach out to friends, family, or a counselor for support.',
+      screen_time:'Avoid screens at least 1 hour before sleep to improve sleep quality.',
+      general:'If your risk is high, consider speaking with a school counselor or mental health professional.',
+    },
+  },
+  id: {
+    navStart:'Mulai Pemeriksaan', badge:'Anonim & Pribadi',
+    hTitle:'Pemeriksaan Kesehatan Mental Dini untuk Pelajar',
+    hSub:'Jawab 10 pertanyaan sederhana. AI kami memprediksi risiko kesehatan mental Anda dalam waktu kurang dari 2 menit.',
+    hStart:'Mulai Pemeriksaan', hDash:'Dashboard Sekolah',
+    f1t:'Penilaian 2 Menit', f1d:'Hanya 10 pertanyaan terarah mencakup tidur, stres, kebiasaan sosial, dan tekanan akademik.',
+    f2t:'Dua Model AI', f2d:'Ensemble Regresi Logistik dan Random Forest untuk prediksi yang lebih akurat.',
+    f3t:'100% Anonim', f3d:'Tidak ada nama, email, atau pengenal pribadi yang dikumpulkan.',
+    f4t:'Hasil yang Dapat Ditindaklanjuti', f4d:'Rekomendasi yang dipersonalisasi dan faktor kontribusi dijelaskan dengan jelas.',
+    qLabel:'Pertanyaan', of:'dari',
+    qNext:'Berikutnya →', qBack:'← Kembali', qSubmit:'Lihat Hasil Saya →',
+    resultTitle:'Penilaian Risiko Kesehatan Mental Anda',
+    resultSub:'Berdasarkan jawaban Anda, model AI kami telah menghasilkan penilaian berikut.',
+    factorsTitle:'Faktor Berkontribusi', recsTitle:'Rekomendasi', modelsTitle:'Prediksi Model',
+    riskLow:'Risiko Rendah', riskMedium:'Risiko Sedang', riskHigh:'Risiko Tinggi',
+    scoreLabel:'Skor Risiko',
+    disclaimer:'⚠️ Pemeriksaan ini hanya untuk tujuan informasi dan bukan diagnosis medis. Jika Anda mengalami tekanan, silakan konsultasikan dengan profesional kesehatan mental.',
+    retake:'Ulangi', homeBtn:'Kembali ke Beranda',
+    dashTitle:'Dashboard Sekolah', dashSub:'Statistik kesehatan mental agregat anonim — data individu tidak pernah ditampilkan.',
+    ds1l:'Total Pemeriksaan', ds1s:'↑ 14% bulan ini',
+    ds2l:'Risiko Rendah', ds3l:'Risiko Sedang', ds4l:'Risiko Tinggi',
+    chart1:'Tren Pemeriksaan Mingguan', chart2:'Ikhtisar Bulanan',
+    chart3:'Distribusi Risiko', chart4:'Faktor Risiko Teratas (Agregat)',
+    dashStart:'Pemeriksaan Baru',
+    loading:'Menganalisis respons Anda…',
+    mlTitle:'Pilih Bahasa', mlSub:'Pilih bahasa pilihan Anda.',
+    homeFooter:'MindGuard adalah alat pemeriksaan saja, bukan diagnosis medis.',
+    resultFooter:'Alat pemeriksaan MindGuard — bukan diagnosis medis',
+    dashFooter:'Dashboard Sekolah MindGuard — Data individu tidak pernah ditampilkan.',
+    questions:[
+      { text:'Berapa umur Anda?', hint:'Masukkan usia dalam tahun', type:'number', key:'age', min:10, max:30 },
+      { text:'Rata-rata, berapa jam Anda tidur per hari?', hint:'Termasuk tidur siang (mis. 7)', type:'number', key:'sleep_hours', min:1, max:16 },
+      { text:'Berapa jam per hari Anda menggunakan media sosial?', hint:'Total di semua platform', type:'number', key:'social_media_hours', min:0, max:16 },
+      { text:'Bagaimana Anda menilai tekanan akademik Anda?', hint:'1 = Sangat Rendah, 5 = Sangat Tinggi', type:'scale', key:'academic_pressure', min:1, max:5, minLabel:'Sangat Rendah', maxLabel:'Sangat Tinggi' },
+      { text:'Berapa kali per minggu Anda berolahraga?', hint:'Olahraga, olahraga, berjalan, dll.', type:'choices', key:'physical_activity', choices:['0 – Tidak ada','1–2 kali','3–4 kali','5+ kali'], values:[0,1.5,3.5,5] },
+      { text:'Bagaimana Anda menilai kualitas hubungan sosial Anda?', hint:'Teman, keluarga, rekan', type:'scale', key:'social_relationship_quality', min:1, max:5, minLabel:'Sangat Buruk', maxLabel:'Sangat Baik' },
+      { text:'Seberapa sering Anda merasa stres atau kewalahan?', hint:'', type:'choices', key:'stress_level', choices:['Jarang atau tidak pernah','Kadang-kadang','Sering','Hampir selalu'], values:[1,2,3.5,5] },
+      { text:'Bagaimana Anda menilai beban belajar Anda?', hint:'1 = Sangat Ringan, 5 = Sangat Berat', type:'scale', key:'study_workload', min:1, max:5, minLabel:'Sangat Ringan', maxLabel:'Sangat Berat' },
+      { text:'Seberapa stabil suasana hati Anda sepanjang hari?', hint:'', type:'choices', key:'mood_stability', choices:['Sangat stabil','Sebagian besar stabil','Agak tidak stabil','Sangat tidak stabil'], values:[5,4,2,1] },
+      { text:'Berapa jam screen time sebelum tidur?', hint:'Ponsel, TV, laptop, dll.', type:'number', key:'screen_time_before_sleep', min:0, max:8 },
+    ],
+    factors:{ sleep:'Durasi tidur kurang dari 6 jam', social_media:'Penggunaan media sosial lebih dari 5 jam per hari', academic:'Tekanan akademik tinggi (4–5)', stress:'Frekuensi stres tinggi', physical:'Aktivitas fisik rendah', social_rel:'Kualitas hubungan sosial buruk', screen_time:'Screen time tinggi sebelum tidur (>2 jam)', study:'Beban belajar berat', mood:'Pola suasana hati tidak stabil' },
+    recs:{ sleep:'Targetkan 7–9 jam tidur setiap malam. Buat jadwal tidur yang konsisten.', social_media:'Tetapkan batas aplikasi untuk mengurangi penggunaan media sosial, terutama sebelum tidur.', academic:'Bicaralah dengan guru atau penasihat akademik tentang mengelola beban kerja Anda.', stress:'Coba mindfulness, latihan pernapasan, atau jurnal untuk mengelola stres.', physical:'Lakukan setidaknya 30 menit aktivitas fisik 3–5 hari per minggu.', social_rel:'Hubungi teman, keluarga, atau konselor untuk mendapatkan dukungan.', screen_time:'Hindari layar setidaknya 1 jam sebelum tidur untuk meningkatkan kualitas tidur.', general:'Jika risiko Anda tinggi, pertimbangkan untuk berbicara dengan konselor sekolah atau profesional kesehatan mental.' },
+  },
+  es: {
+    navStart:'Iniciar Evaluación', badge:'Anónimo y Privado',
+    hTitle:'Evaluación Temprana de Salud Mental para Estudiantes',
+    hSub:'Responde 10 preguntas simples. Nuestra IA predice tu riesgo de salud mental en menos de 2 minutos.',
+    hStart:'Iniciar Evaluación', hDash:'Panel Escolar',
+    f1t:'Evaluación de 2 Minutos', f1d:'Solo 10 preguntas específicas sobre sueño, estrés, hábitos sociales y presión académica.',
+    f2t:'Modelos de IA Dual', f2d:'Ensemble de Regresión Logística y Random Forest para predicciones más precisas.',
+    f3t:'100% Anónimo', f3d:'No se recopilan nombres, correos ni identificadores personales.',
+    f4t:'Resultados Accionables', f4d:'Recomendaciones personalizadas y factores contribuyentes explicados claramente.',
+    qLabel:'Pregunta', of:'de',
+    qNext:'Siguiente →', qBack:'← Atrás', qSubmit:'Ver Mis Resultados →',
+    resultTitle:'Tu Evaluación de Riesgo de Salud Mental',
+    resultSub:'Basado en tus respuestas, nuestros modelos de IA han generado la siguiente evaluación.',
+    factorsTitle:'Factores Contribuyentes', recsTitle:'Recomendaciones', modelsTitle:'Predicciones del Modelo',
+    riskLow:'Riesgo Bajo', riskMedium:'Riesgo Medio', riskHigh:'Riesgo Alto',
+    scoreLabel:'Puntuación de Riesgo',
+    disclaimer:'⚠️ Esta evaluación es solo para fines informativos y no constituye un diagnóstico médico. Si estás sufriendo, por favor consulta a un profesional de salud mental.',
+    retake:'Repetir', homeBtn:'Volver al Inicio',
+    dashTitle:'Panel Escolar', dashSub:'Estadísticas anónimas agregadas de salud mental — los datos individuales nunca se muestran.',
+    ds1l:'Total de Evaluaciones', ds1s:'↑ 14% este mes',
+    ds2l:'Riesgo Bajo', ds3l:'Riesgo Medio', ds4l:'Riesgo Alto',
+    chart1:'Tendencia Semanal', chart2:'Resumen Mensual',
+    chart3:'Distribución de Riesgo', chart4:'Principales Factores de Riesgo',
+    dashStart:'Nueva Evaluación',
+    loading:'Analizando tus respuestas…',
+    mlTitle:'Elegir Idioma', mlSub:'Selecciona tu idioma preferido.',
+    homeFooter:'MindGuard es solo una herramienta de evaluación, no un diagnóstico médico.',
+    resultFooter:'Herramienta de evaluación MindGuard — no es un diagnóstico médico',
+    dashFooter:'Panel Escolar MindGuard — Los datos individuales nunca se muestran.',
+    questions:[
+      { text:'¿Cuántos años tienes?', hint:'Ingresa tu edad en años', type:'number', key:'age', min:10, max:30 },
+      { text:'¿Cuántas horas duermes al día en promedio?', hint:'Incluye siestas (ej. 7)', type:'number', key:'sleep_hours', min:1, max:16 },
+      { text:'¿Cuántas horas al día usas redes sociales?', hint:'Total en todas las plataformas', type:'number', key:'social_media_hours', min:0, max:16 },
+      { text:'¿Cómo calificarías tu presión académica?', hint:'1 = Muy Baja, 5 = Muy Alta', type:'scale', key:'academic_pressure', min:1, max:5, minLabel:'Muy Baja', maxLabel:'Muy Alta' },
+      { text:'¿Cuántas veces por semana haces actividad física?', hint:'Ejercicio, deporte, caminata, etc.', type:'choices', key:'physical_activity', choices:['0 – Ninguna','1–2 veces','3–4 veces','5+ veces'], values:[0,1.5,3.5,5] },
+      { text:'¿Cómo calificarías la calidad de tus relaciones sociales?', hint:'Amigos, familia, compañeros', type:'scale', key:'social_relationship_quality', min:1, max:5, minLabel:'Muy Mala', maxLabel:'Excelente' },
+      { text:'¿Con qué frecuencia te sientes estresado?', hint:'', type:'choices', key:'stress_level', choices:['Raramente o nunca','A veces','A menudo','Casi siempre'], values:[1,2,3.5,5] },
+      { text:'¿Cómo calificarías tu carga de estudio?', hint:'1 = Muy Ligera, 5 = Muy Pesada', type:'scale', key:'study_workload', min:1, max:5, minLabel:'Muy Ligera', maxLabel:'Muy Pesada' },
+      { text:'¿Qué tan estable es tu estado de ánimo durante el día?', hint:'', type:'choices', key:'mood_stability', choices:['Muy estable','Mayormente estable','Algo inestable','Muy inestable'], values:[5,4,2,1] },
+      { text:'¿Cuántas horas de pantalla tienes antes de dormir?', hint:'Teléfono, TV, laptop, etc.', type:'number', key:'screen_time_before_sleep', min:0, max:8 },
+    ],
+    factors:{ sleep:'Duración del sueño menor a 6 horas', social_media:'Uso de redes sociales superior a 5 horas diarias', academic:'Alta presión académica (4–5)', stress:'Alta frecuencia de estrés', physical:'Baja actividad física', social_rel:'Mala calidad de relaciones sociales', screen_time:'Alto tiempo de pantalla antes de dormir (>2 horas)', study:'Carga de estudio pesada', mood:'Patrones de estado de ánimo inestables' },
+    recs:{ sleep:'Apunta a dormir 7–9 horas cada noche. Crea un horario de sueño consistente.', social_media:'Establece límites de aplicaciones para reducir el uso de redes sociales.', academic:'Habla con un maestro o asesor académico sobre cómo manejar tu carga de trabajo.', stress:'Prueba mindfulness, ejercicios de respiración o journaling para manejar el estrés.', physical:'Incorpora al menos 30 minutos de actividad física 3–5 días por semana.', social_rel:'Comunícate con amigos, familia o un consejero para obtener apoyo.', screen_time:'Evita las pantallas al menos 1 hora antes de dormir.', general:'Si tu riesgo es alto, considera hablar con un consejero escolar o un profesional de salud mental.' },
+  },
+};
+
+// Fallback for unlisted languages to English
+['zh','ja','ar','fr','de','ko','pt'].forEach(code => {
+  T[code] = { ...T.en };
+  const overrides = {
+    zh:{ hTitle:'学生心理健康早期筛查', navStart:'开始筛查', hStart:'开始筛查', hDash:'学校仪表板', riskLow:'低风险', riskMedium:'中等风险', riskHigh:'高风险', loading:'正在分析您的回答…', mlTitle:'选择语言', mlSub:'请选择您偏好的语言。', badge:'匿名且私密', dashTitle:'学校仪表板' },
+    ja:{ hTitle:'学生のためのメンタルヘルス早期スクリーニング', navStart:'スクリーニング開始', hStart:'スクリーニング開始', hDash:'学校ダッシュボード', riskLow:'低リスク', riskMedium:'中リスク', riskHigh:'高リスク', loading:'回答を分析中…', mlTitle:'言語を選択', mlSub:'ご希望の言語を選択してください。', badge:'匿名・プライベート', dashTitle:'学校ダッシュボード' },
+    ar:{ hTitle:'الفحص المبكر للصحة النفسية للطلاب', navStart:'بدء الفحص', hStart:'بدء الفحص', hDash:'لوحة تحكم المدرسة', riskLow:'خطر منخفض', riskMedium:'خطر متوسط', riskHigh:'خطر مرتفع', loading:'جارٍ تحليل إجاباتك…', mlTitle:'اختر اللغة', mlSub:'اختر لغتك المفضلة.', badge:'مجهول وخاص', dashTitle:'لوحة تحكم المدرسة' },
+    fr:{ hTitle:'Dépistage précoce de la santé mentale des étudiants', navStart:'Commencer le dépistage', hStart:'Commencer', hDash:'Tableau de bord', riskLow:'Risque Faible', riskMedium:'Risque Moyen', riskHigh:'Risque Élevé', loading:'Analyse de vos réponses…', mlTitle:'Choisir la langue', mlSub:'Sélectionnez votre langue préférée.', badge:'Anonyme et Privé', dashTitle:'Tableau de bord' },
+    de:{ hTitle:'Frühzeitiges psychisches Gesundheitsscreening für Studenten', navStart:'Screening starten', hStart:'Screening starten', hDash:'Schul-Dashboard', riskLow:'Geringes Risiko', riskMedium:'Mittleres Risiko', riskHigh:'Hohes Risiko', loading:'Analysiere deine Antworten…', mlTitle:'Sprache wählen', mlSub:'Wähle deine bevorzugte Sprache.', badge:'Anonym & Privat', dashTitle:'Schul-Dashboard' },
+    ko:{ hTitle:'학생을 위한 정신 건강 조기 선별', navStart:'선별 시작', hStart:'선별 시작', hDash:'학교 대시보드', riskLow:'낮은 위험', riskMedium:'중간 위험', riskHigh:'높은 위험', loading:'응답을 분석하는 중…', mlTitle:'언어 선택', mlSub:'선호하는 언어를 선택하세요.', badge:'익명 & 비공개', dashTitle:'학교 대시보드' },
+    pt:{ hTitle:'Triagem Precoce de Saúde Mental para Estudantes', navStart:'Iniciar Triagem', hStart:'Iniciar Triagem', hDash:'Painel Escolar', riskLow:'Baixo Risco', riskMedium:'Médio Risco', riskHigh:'Alto Risco', loading:'Analisando suas respostas…', mlTitle:'Escolher Idioma', mlSub:'Selecione seu idioma preferido.', badge:'Anônimo e Privado', dashTitle:'Painel Escolar' },
+  };
+  if(overrides[code]) Object.assign(T[code], overrides[code]);
+});
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let currentLang = localStorage.getItem('mg_lang') || null;
+let selectedLangTemp = null;
+let currentPage = 'lang';
+let currentQ = 0;
+let answers = {};
+let chartInstances = {};
+
+// ═══════════════════════════════════════════════════════════
+// ML PREDICTION (client-side simulation of trained model)
+// ═══════════════════════════════════════════════════════════
+function predictRisk(data) {
+  // Logistic Regression simulation (weights derived from depression dataset patterns)
+  const weights = {
+    sleep_hours: -0.28,       // more sleep = lower risk
+    social_media_hours: 0.18, // more = higher risk
+    academic_pressure: 0.32,
+    physical_activity: -0.15,
+    social_relationship_quality: -0.25,
+    stress_level: 0.38,
+    study_workload: 0.20,
+    mood_stability: -0.30,
+    screen_time_before_sleep: 0.15,
+    age: 0.02
+  };
+  const bias = -0.5;
+
+  // Normalize inputs
+  const norm = {
+    sleep_hours: (data.sleep_hours - 7) / 2,
+    social_media_hours: (data.social_media_hours - 3) / 2,
+    academic_pressure: (data.academic_pressure - 3) / 1.5,
+    physical_activity: (data.physical_activity - 2) / 1.5,
+    social_relationship_quality: (data.social_relationship_quality - 3) / 1.5,
+    stress_level: (data.stress_level - 2.5) / 1.5,
+    study_workload: (data.study_workload - 3) / 1.5,
+    mood_stability: (data.mood_stability - 3) / 1.5,
+    screen_time_before_sleep: (data.screen_time_before_sleep - 1.5) / 1.5,
+    age: (data.age - 18) / 3,
+  };
+
+  let logit = bias;
+  for(const k in weights) logit += weights[k] * (norm[k] || 0);
+  const lr_prob = 1 / (1 + Math.exp(-logit));
+
+  // Random Forest simulation (ensemble of decision trees)
+  const rf_score = computeRFScore(data);
+
+  // Ensemble
+  const ensemble = lr_prob * 0.45 + rf_score * 0.55;
+  const score = Math.round(ensemble * 100);
+
+  let category, key;
+  if(score < 35) { category = 'low'; key = 'riskLow'; }
+  else if(score < 65) { category = 'medium'; key = 'riskMedium'; }
+  else { category = 'high'; key = 'riskHigh'; }
+
+  // Identify contributing factors
+  const factorScores = {
+    sleep: data.sleep_hours < 6 ? 0.8 : data.sleep_hours < 7 ? 0.4 : 0,
+    social_media: data.social_media_hours > 5 ? 0.7 : data.social_media_hours > 3 ? 0.35 : 0,
+    academic: data.academic_pressure >= 4 ? 0.75 : data.academic_pressure >= 3 ? 0.3 : 0,
+    stress: data.stress_level >= 3.5 ? 0.9 : data.stress_level >= 2.5 ? 0.4 : 0,
+    physical: data.physical_activity < 1.5 ? 0.6 : data.physical_activity < 2 ? 0.3 : 0,
+    social_rel: data.social_relationship_quality <= 2 ? 0.7 : data.social_relationship_quality <= 3 ? 0.3 : 0,
+    screen_time: data.screen_time_before_sleep > 2 ? 0.5 : data.screen_time_before_sleep > 1 ? 0.25 : 0,
+    study: data.study_workload >= 4 ? 0.5 : data.study_workload >= 3 ? 0.2 : 0,
+    mood: data.mood_stability <= 2 ? 0.8 : data.mood_stability <= 3 ? 0.35 : 0,
+  };
+
+  const topFactors = Object.entries(factorScores)
+    .filter(([,v]) => v > 0)
+    .sort((a,b) => b[1]-a[1])
+    .slice(0,4)
+    .map(([k]) => k);
+
+  return { score, category, key, lr_prob: Math.round(lr_prob*100), rf_score: Math.round(rf_score*100), topFactors };
+}
+
+function computeRFScore(d) {
+  // Simulating 5 decision trees
+  const trees = [
+    () => {
+      if(d.stress_level >= 3.5) return d.sleep_hours < 6 ? 0.85 : 0.6;
+      if(d.academic_pressure >= 4) return d.social_relationship_quality <= 2 ? 0.7 : 0.4;
+      return 0.2;
+    },
+    () => {
+      if(d.sleep_hours < 6 && d.social_media_hours > 4) return 0.8;
+      if(d.mood_stability <= 2) return 0.75;
+      if(d.physical_activity < 1.5 && d.stress_level > 3) return 0.6;
+      return 0.25;
+    },
+    () => {
+      if(d.academic_pressure >= 4 && d.study_workload >= 4) return 0.78;
+      if(d.social_relationship_quality <= 2 && d.stress_level >= 3) return 0.72;
+      return 0.3;
+    },
+    () => {
+      if(d.screen_time_before_sleep > 2 && d.sleep_hours < 7) return 0.6;
+      if(d.stress_level >= 4) return 0.82;
+      if(d.mood_stability <= 2 && d.sleep_hours < 6) return 0.88;
+      return 0.22;
+    },
+    () => {
+      let s = 0;
+      if(d.sleep_hours < 6) s += 0.2;
+      if(d.social_media_hours > 5) s += 0.15;
+      if(d.academic_pressure >= 4) s += 0.2;
+      if(d.stress_level >= 3.5) s += 0.25;
+      if(d.physical_activity < 1.5) s += 0.1;
+      if(d.social_relationship_quality <= 2) s += 0.1;
+      return Math.min(s, 0.95);
+    }
+  ];
+  const avg = trees.reduce((sum, t) => sum + t(), 0) / trees.length;
+  return avg;
+}
+
+// ═══════════════════════════════════════════════════════════
+// LANGUAGE
+// ═══════════════════════════════════════════════════════════
+function t(key) {
+  const lang = currentLang || 'en';
+  return (T[lang] && T[lang][key]) ? T[lang][key] : (T.en[key] || key);
+}
+
+function renderLangGrid(containerId, selectedCode, onSelect) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = LANGS.map(l => `
+    <div class="lang-card ${selectedCode === l.code ? 'selected':''}" onclick="${onSelect}('${l.code}')">
+      <span class="flag">${l.flag}</span>
+      <div class="lang-name">${l.name}</div>
+      <div class="lang-native">${l.native}</div>
+    </div>
+  `).join('');
+}
+
+function selectLang(code) {
+  selectedLangTemp = code;
+  renderLangGrid('lang-grid', code, 'selectLang');
+  document.getElementById('lang-continue').disabled = false;
+}
+
+function confirmLanguage() {
+  if(!selectedLangTemp) return;
+  currentLang = selectedLangTemp;
+  localStorage.setItem('mg_lang', currentLang);
+  applyTranslations();
+  goPage('home');
+}
+
+function openLangModal() {
+  selectedLangTemp = currentLang;
+  renderLangGrid('modal-lang-grid', currentLang, 'selectModalLang');
+  document.getElementById('ml-title').textContent = t('mlTitle');
+  document.getElementById('ml-sub').textContent = t('mlSub');
+  document.getElementById('lang-modal').classList.add('active');
+}
+
+function selectModalLang(code) {
+  selectedLangTemp = code;
+  renderLangGrid('modal-lang-grid', code, 'selectModalLang');
+  currentLang = code;
+  localStorage.setItem('mg_lang', code);
+  applyTranslations();
+  closeLangModal();
+  renderCurrentQuestion();
+}
+
+function closeLangModal() {
+  document.getElementById('lang-modal').classList.remove('active');
+}
+
+function applyTranslations() {
+  const l = currentLang || 'en';
+  const li = LANGS.find(x=>x.code===l);
+  const short = li ? li.code.toUpperCase() : 'EN';
+  document.querySelectorAll('.nav-lang-label, .nav-lang-label2, .nav-lang-label3, .nav-lang-label4, #nav-lang-label').forEach(el => el.textContent = short);
+
+  const map = {
+    'nav-start-btn':'navStart', 'h-badge':'badge', 'h-title':'hTitle', 'h-sub':'hSub',
+    'h-start-btn':'hStart', 'h-dash-btn':'hDash', 'f1t':'f1t','f1d':'f1d','f2t':'f2t','f2d':'f2d',
+    'f3t':'f3t','f3d':'f3d','f4t':'f4t','f4d':'f4d',
+    'result-title':'resultTitle','result-sub':'resultSub','factors-title':'factorsTitle',
+    'recs-title':'recsTitle','models-title':'modelsTitle','score-label-ring':'scoreLabel',
+    'result-disclaimer':'disclaimer','retake-btn':'retake','home-btn-result':'homeBtn',
+    'dash-title':'dashTitle','dash-sub':'dashSub','ds1l':'ds1l','ds1s':'ds1s',
+    'ds2l':'ds2l','ds3l':'ds3l','ds4l':'ds4l',
+    'chart1-title':'chart1','chart2-title':'chart2','chart3-title':'chart3','chart4-title':'chart4',
+    'dash-start-btn':'dashStart',
+    'loading-text':'loading',
+    'home-footer':'homeFooter','result-footer':'resultFooter','dash-footer':'dashFooter',
+  };
+  for(const [id,key] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if(el) el.textContent = t(key);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PAGE NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  currentPage = name;
+  if(name === 'dashboard') initDashboard();
+  if(name === 'quiz') { currentQ = 0; answers = {}; renderCurrentQuestion(); }
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════════════════════
+function getQuestions() { return t('questions'); }
+
+function renderCurrentQuestion() {
+  const qs = getQuestions();
+  const q = qs[currentQ];
+  if(!q) return;
+  const total = qs.length;
+  const pct = Math.round((currentQ / total) * 100);
+
+  document.getElementById('q-progress-label').textContent = `${t('qLabel')} ${currentQ+1} ${t('of')} ${total}`;
+  document.getElementById('q-progress-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = ((currentQ+1)/total*100) + '%';
+
+  const isLast = currentQ === total - 1;
+  document.getElementById('q-next-btn').textContent = isLast ? t('qSubmit') : t('qNext');
+  document.getElementById('q-back-btn').style.visibility = currentQ === 0 ? 'hidden' : 'visible';
+
+  const val = answers[q.key];
+  let html = `<div class="q-number">Q${currentQ+1}</div><div class="q-text">${q.text}</div>`;
+  if(q.hint) html += `<div class="q-hint">${q.hint}</div>`;
+
+  if(q.type === 'number') {
+    html += `<input class="num-input" type="number" id="q-input" min="${q.min}" max="${q.max}" 
+      value="${val !== undefined ? val : ''}" placeholder="${q.min}–${q.max}" 
+      oninput="answers['${q.key}']=parseFloat(this.value)" onkeydown="if(event.key==='Enter')nextQuestion()">`;
+  } else if(q.type === 'scale') {
+    html += `<div class="scale-options">`;
+    for(let i=q.min; i<=q.max; i++) {
+      html += `<div class="scale-option ${val==i?'selected':''}" onclick="selectScale('${q.key}',${i})">${i}</div>`;
+    }
+    html += `</div><div class="scale-labels"><span>${q.minLabel||''}</span><span>${q.maxLabel||''}</span></div>`;
+  } else if(q.type === 'choices') {
+    html += `<div class="choice-options">`;
+    q.choices.forEach((c,i) => {
+      const isSelected = val === q.values[i];
+      html += `<div class="choice-option ${isSelected?'selected':''}" onclick="selectChoice('${q.key}',${q.values[i]},this)">
+        <div class="choice-dot"></div>${c}</div>`;
+    });
+    html += `</div>`;
+  }
+
+  const card = document.getElementById('question-card');
+  card.innerHTML = html;
+  card.style.animation = 'none';
+  card.offsetHeight;
+  card.style.animation = 'slideUp 0.3s ease';
+
+  if(q.type === 'number') {
+    setTimeout(() => { const inp = document.getElementById('q-input'); if(inp) inp.focus(); }, 100);
+  }
+}
+
+function selectScale(key, val) {
+  answers[key] = val;
+  document.querySelectorAll('.scale-option').forEach(el => {
+    el.classList.toggle('selected', parseInt(el.textContent) === val);
+  });
+}
+
+function selectChoice(key, val, el) {
+  answers[key] = val;
+  document.querySelectorAll('.choice-option').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function nextQuestion() {
+  const qs = getQuestions();
+  const q = qs[currentQ];
+  if(answers[q.key] === undefined || answers[q.key] === '' || isNaN(answers[q.key])) {
+    // Visual shake
+    const card = document.getElementById('question-card');
+    card.style.transform = 'translateX(-8px)';
+    setTimeout(() => card.style.transform = 'translateX(8px)', 80);
+    setTimeout(() => card.style.transform = '', 160);
+    return;
+  }
+  if(currentQ < qs.length - 1) {
+    currentQ++;
+    renderCurrentQuestion();
+  } else {
+    submitQuiz();
+  }
+}
+
+function prevQuestion() {
+  if(currentQ > 0) { currentQ--; renderCurrentQuestion(); }
+}
+
+function resetQuiz() {
+  currentQ = 0; answers = {};
+}
+
+function submitQuiz() {
+  const loading = document.getElementById('loading');
+  document.getElementById('loading-text').textContent = t('loading');
+  loading.classList.add('active');
+  setTimeout(() => {
+    loading.classList.remove('active');
+    const result = predictRisk(answers);
+    renderResult(result);
+    goPage('result');
+  }, 1800);
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESULT
+// ═══════════════════════════════════════════════════════════
+function renderResult(result) {
+  const { score, category, key, lr_prob, rf_score, topFactors } = result;
+  const badge = document.getElementById('result-badge');
+  const icons = { low:'🟢', medium:'🟡', high:'🔴' };
+  badge.className = `risk-badge ${category}`;
+  badge.textContent = `${icons[category]} ${t(key)}`;
+
+  // Score ring
+  const offset = 377 - (score / 100) * 377;
+  document.getElementById('ring-dash').style.strokeDashoffset = offset;
+  document.getElementById('score-num').textContent = score + '%';
+  document.getElementById('score-num').style.color = category === 'low' ? 'var(--low)' : category === 'medium' ? 'var(--medium)' : 'var(--high)';
+
+  // Factors
+  const factors = t('factors');
+  const factorMap = { sleep:'red', social_media:'amber', academic:'red', stress:'red', physical:'amber', social_rel:'amber', screen_time:'amber', study:'amber', mood:'red' };
+  const fl = document.getElementById('factors-list');
+  fl.innerHTML = topFactors.length ? topFactors.map(f => `
+    <li class="factor-item"><div class="factor-dot ${factorMap[f]||'amber'}"></div>${factors[f]||f}</li>
+  `).join('') : `<li class="factor-item"><div class="factor-dot teal"></div>No major risk factors detected.</li>`;
+
+  // Recommendations
+  const recs = t('recs');
+  const recData = [];
+  const icons2 = { sleep:'😴', social_media:'📱', academic:'📚', stress:'🧘', physical:'🏃', social_rel:'💬', screen_time:'🌙', general:'🏥' };
+  topFactors.forEach(f => { if(recs[f]) recData.push({ icon: icons2[f]||'💡', text: recs[f] }); });
+  if(category === 'high' || recData.length < 2) recData.push({ icon:'🏥', text: recs.general });
+  document.getElementById('recs-list').innerHTML = recData.slice(0,4).map(r => `
+    <div class="rec-item"><div class="rec-icon">${r.icon}</div><div>${r.text}</div></div>
+  `).join('');
+
+  // Model scores
+  const lrColor = lr_prob < 35 ? '#2dd4bf' : lr_prob < 65 ? '#fbbf24' : '#fb7185';
+  const rfColor = rf_score < 35 ? '#2dd4bf' : rf_score < 65 ? '#fbbf24' : '#fb7185';
+  document.getElementById('model-scores').innerHTML = `
+    <div class="model-card">
+      <div class="model-name">Logistic Regression</div>
+      <div class="model-val" style="color:${lrColor}">${lr_prob}%</div>
+      <div class="model-bar"><div class="model-bar-fill" style="width:${lr_prob}%; background:${lrColor}"></div></div>
+    </div>
+    <div class="model-card">
+      <div class="model-name">Random Forest</div>
+      <div class="model-val" style="color:${rfColor}">${rf_score}%</div>
+      <div class="model-bar"><div class="model-bar-fill" style="width:${rf_score}%; background:${rfColor}"></div></div>
+    </div>
+  `;
+
+  // Store in simulated DB
+  storeResult(category);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIMULATED DATABASE
+// ═══════════════════════════════════════════════════════════
+function storeResult(category) {
+  let stored = JSON.parse(localStorage.getItem('mg_results') || '[]');
+  stored.push({ category, ts: Date.now() });
+  if(stored.length > 500) stored = stored.slice(-500);
+  localStorage.setItem('mg_results', JSON.stringify(stored));
+}
+
+function getStoredResults() {
+  const base = [
+    ...Array(539).fill('low'),
+    ...Array(475).fill('medium'),
+    ...Array(270).fill('high')
+  ];
+  const extra = JSON.parse(localStorage.getItem('mg_results') || '[]').map(r => r.category);
+  return [...base, ...extra];
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function initDashboard() {
+  const results = getStoredResults();
+  const total = results.length;
+  const low = results.filter(r=>r==='low').length;
+  const med = results.filter(r=>r==='medium').length;
+  const high = results.filter(r=>r==='high').length;
+
+  document.getElementById('ds1v').textContent = total.toLocaleString();
+  document.getElementById('ds2v').textContent = Math.round(low/total*100) + '%';
+  document.getElementById('ds3v').textContent = Math.round(med/total*100) + '%';
+  document.getElementById('ds4v').textContent = Math.round(high/total*100) + '%';
+  document.getElementById('ds2s').textContent = low + ' students';
+  document.getElementById('ds3s').textContent = med + ' students';
+  document.getElementById('ds4s').textContent = high + ' students';
+
+  // Risk distribution bars
+  const dist = document.getElementById('risk-dist');
+  const lp = Math.round(low/total*100), mp = Math.round(med/total*100), hp = Math.round(high/total*100);
+  dist.innerHTML = [
+    { label: t('ds2l'), pct: lp, color:'var(--low)' },
+    { label: t('ds3l'), pct: mp, color:'var(--medium)' },
+    { label: t('ds4l'), pct: hp, color:'var(--high)' },
+  ].map(d => `
+    <div class="risk-dist-item">
+      <div class="risk-dist-label">${d.label}</div>
+      <div class="risk-dist-bar-wrap"><div class="risk-dist-bar" style="width:${d.pct}%; background:${d.color}">${d.pct > 10 ? d.pct+'%' : ''}</div></div>
+      <div class="risk-dist-pct" style="color:${d.color}">${d.pct}%</div>
+    </div>
+  `).join('');
+
+  Chart.defaults.color = '#7a8499';
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+  destroyCharts();
+
+  const cOpts = (labels, data1, data2, data3) => ({
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: t('ds2l'), data: data1, backgroundColor: 'rgba(45,212,191,0.7)', borderRadius: 4 },
+        { label: t('ds3l'), data: data2, backgroundColor: 'rgba(251,191,36,0.7)', borderRadius: 4 },
+        { label: t('ds4l'), data: data3, backgroundColor: 'rgba(251,113,133,0.7)', borderRadius: 4 },
+      ]
+    },
+    options: { responsive:true, scales:{ x:{ grid:{color:'rgba(255,255,255,0.04)'} }, y:{ grid:{color:'rgba(255,255,255,0.04)'}, beginAtZero:true } }, plugins:{ legend:{ labels:{ boxWidth:12 } } } }
+  });
+
+  chartInstances.weekly = new Chart(document.getElementById('weeklyChart'), cOpts(
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+    [22,18,25,20,28,15,12],[18,22,20,24,22,12,10],[10,8,12,9,15,6,5]
+  ));
+
+  chartInstances.monthly = new Chart(document.getElementById('monthlyChart'), cOpts(
+    ['Sep','Oct','Nov','Dec','Jan','Feb'],
+    [85,92,105,88,110,117],[70,78,88,75,95,105],[40,45,52,41,55,62]
+  ));
+
+  chartInstances.factor = new Chart(document.getElementById('factorChart'), {
+    type: 'horizontalBar',
+    data: {
+      labels: ['Sleep < 6hrs','Academic Pressure','Stress Freq.','Social Media > 5h','Low Physical Activity','Poor Social Rel.','Screen Time > 2h'],
+      datasets: [{ data:[68,61,57,45,42,38,35], backgroundColor: ['rgba(251,113,133,0.7)','rgba(251,113,133,0.6)','rgba(251,191,36,0.7)','rgba(251,191,36,0.6)','rgba(99,135,255,0.7)','rgba(99,135,255,0.6)','rgba(45,212,191,0.7)'], borderRadius: 4 }]
+      },
+    options: {
+      indexAxis: 'y', responsive: true,
+      scales: { x:{ max:100, grid:{color:'rgba(255,255,255,0.04)'}, ticks:{callback:v=>v+'%'} }, y:{ grid:{color:'rgba(255,255,255,0.04)'} } },
+      plugins: { legend:{ display:false } }
+    }
+  });
+}
+
+function destroyCharts() {
+  for(const k in chartInstances) { try{ chartInstances[k].destroy(); } catch(e){} }
+  chartInstances = {};
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+(function init() {
+  renderLangGrid('lang-grid', null, 'selectLang');
+
+  if(currentLang) {
+    selectedLangTemp = currentLang;
+    applyTranslations();
+    renderLangGrid('lang-grid', currentLang, 'selectLang');
+    document.getElementById('lang-continue').disabled = false;
+  }
+})();
+</script>
+</body>
+</html>
